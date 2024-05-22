@@ -15,10 +15,38 @@ datasource db {
 
 model User {
   id Int @id @default(autoincrement())
-  name String
+  nickname String
   email String @unique
   password String
   profile_image_path String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  chats Chat[]
+  rooms Room[]
+  participants Participants[]
 }
+
+model Room {
+  id Int @id @default(autoincrement())
+  title String
+  userKey Int
+  user User @relation(fields: [userKey], references: [id])
+  chats Chat[]
+  participants Participants[]
+}
+
+model Chat {
+  id Int @id @default(autoincrement())
+  roomKey Int
+  userKey Int
+  chat String
+  createdAt DateTime @default(now())
+  room Room @relation(fields: [roomKey], references: [id])
+  user User @relation(fields: [userKey], references: [id])
+}
+
+model Participants {
+  id Int @id @default(autoincrement())
+  roomKey Int
+  userKey Int
+  room Room @relation(fields: [roomKey], references: [id])
+  user User @relation(fields: [userKey], references: [id])
+} 
