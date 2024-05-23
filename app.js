@@ -1,28 +1,21 @@
-// app.js
-
 const express = require('express');
-const Router = require('./socket');
+const http = require('http');
+const socket = require('./socket'); // socket.js 모듈을 불러옴
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-const webSocket = require('./socket');
-
-require('dotenv').config();
-const port = process.env.PORT;
+// Express 앱 설정
 
 const app = express();
+const server = http.createServer(app);
 
-const path = require('path');
-app.use(express.static(path.join(__dirname, 'src')));
+// 소켓 서버 실행
+socket(server);
 
-app.use(express.json());
-app.use('/api', Router);
-app.get('/', (req, res) => {
-  res.status(200).json({ massage: '연동 잘 됨.' });
+// 서버 시작
+const port = process.env.PORT || 3002;
+server.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
-
-const server = app.listen(port, () => {
-  console.log(port, '포트로 서버가 열렸어요!');
-});
-
-webSocket(server, app);
 
 module.exports = app;
