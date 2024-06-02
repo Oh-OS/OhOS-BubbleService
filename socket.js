@@ -1,107 +1,27 @@
-// socket.js
-
-const socket = require('socket.io');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const SocketIO = require('socket.io')
 
 module.exports = (server) => {
-  const io = socket(server, {
-    cors: {
-      origin: '*',
-      credentials: true,
-    },
-  });
+  const io = SocketIO(server, { path : '/socket.io' })
+  app.set('io', io);
+  const room = io.of('/room')
+  const chat = io.of('/chat')
 
-  // 소켓 연결
-  io.on('connection', (socket) => {
-    console.log('a user connected');
+  room.on('connection', (socket) => {
+    console.log('room 네임스페이스에 접속')
+    socket.on('disconnect', () => {
+      console.log('room 네임스페이스에 접속 해제')
+    })
+  })
 
-    socket.on('join-room', async (data) => {
-      const { roomKey, userKey } = data;
-      const enterUser = await prisma.participant.findUnique({
-        where: { roomKey_userKey: { roomKey, userKey } },
-        include: {
-          user: true,
-          room: true,
-        },
-      });
+  chat.on('connection', (socket) => {
+    console.log('chat 네임스페이스에 접속')
 
-      socket.join(enterUser.room.title);
-      const enterMsg = await prisma.chat.findFirst({
-        where: {
-          roomKey,
-          userKey: 12,
-          chat: `${enterUser.user.nickname}님이 입장했습니다.`,
-        },
-      });
+    socket.on('join', (data) => {
+      socket.join(data)
+    })
 
-      if (!enterMsg) {
-        await prisma.chat.create({
-          data: {
-            roomKey,
-            userKey: 12,
-            chat: `${enterUser.user.nickname}님이 입장했습니다.`,
-          },
-        });
-
-        const param = { nickname: enterUser.user.nickname };
-        io.to(enterUser.room.title).emit('welcome', param);
-      }
-    });
-
-    socket.on('chat_message', async (data) => {
-      const { message, roomKey, userKey } = data;
-      const newChat = await prisma.chat.create({
-        data: {
-          roomKey,
-          userKey,
-          chat: message,
-        },
-      });
-
-      const chatUser = await prisma.participant.findUnique({
-        where: { roomKey_userKey: { roomKey, userKey } },
-        include: {
-          user: true,
-          room: true,
-        },
-      });
-
-      const param = {
-        message,
-        roomKey,
-        nickname: chatUser.user.nickname,
-        time: newChat.createdAt,
-      };
-
-      io.to(chatUser.room.title).emit('message', param);
-    });
-
-    socket.on('leave-room', async (data) => {
-      const { roomKey, userKey } = data;
-      const leaveUser = await prisma.participant.findUnique({
-        where: { roomKey_userKey: { roomKey, userKey } },
-        include: {
-          user: true,
-          room: true,
-        },
-      });
-
-      if (userKey === leaveUser.room.userKey) {
-        const param = { nickname: leaveUser.user.nickname };
-        socket.broadcast.to(leaveUser.room.title).emit('byeHost', param);
-      } else {
-        await prisma.chat.create({
-          data: {
-            roomKey,
-            userKey: 12,
-            chat: `${leaveUser.user.nickname}님이 퇴장했습니다.`,
-          },
-        });
-
-        const param = { nickname: leaveUser.user.nickname };
-        io.to(leaveUser.room.title).emit('bye', param);
-      }
-    });
-  });
-};
+    socket.on('disconnect', () =>{
+      console.log('chat 네임스페이스 접속 해제')
+    })
+  })
+}
