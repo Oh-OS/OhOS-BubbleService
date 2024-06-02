@@ -23,9 +23,10 @@ app.use(session({
   }
 }));
 
-// app.use(cors({
-//     origin : *
-// }))
+app.use(cors({
+    origin: '*',
+}));
+
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
