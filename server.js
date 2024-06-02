@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const session = require('express-session');
 const socketIo = require('socket.io');
+const cors = require('cors')
 const bodyParser = require('body-parser');
 const { PrismaClient } = require('@prisma/client');
 
@@ -31,28 +32,8 @@ app.use(cors({
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const user = await prisma.user.findUnique({ where: { email } });
 
-        if (user) {
-            if (password === user.password) {
-                req.session.user = user;
-                console.log(req.session.user);
-                return res.status(200).json(user);
-            } else {
-                return res.status(401).json({ error: 'Unauthorized' });
-            }
-        } else {
-            return res.status(404).json({ error: 'User Not Found' });
-        }
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ error: 'login error' });
-    }
-});
-
+// 채팅방 목록들
 app.get('/rooms', async (req, res) => {
     try {
         const rooms = await prisma.room.findMany();
@@ -63,9 +44,26 @@ app.get('/rooms', async (req, res) => {
     }
 });
 
+// user 정보 조회하기
+app.get('/getUserInfo/:id', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.id)
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        })
+        console.log(user);
+        res.status(200).json(user)
+    } catch (error) {
+        console.error(`user 정보 조회하기 실패: ${error.message}`);
+        res.status(500).json({ error : ' 유저 정보 조회하기 실패' })
+    }
+})
+
+// 채팅관련
 io.on('connection', (socket) => {
     console.log('유저 연결됨');
 
+    // 채팅방에 참가 
     socket.on('join room', async (roomId) => {
         try {
             const room = await prisma.room.findUnique({
@@ -85,8 +83,9 @@ io.on('connection', (socket) => {
             console.error(`채팅 및 방 찾기 실패: ${error.message}`);
             socket.emit('error', '채팅 및 방 찾기 실패');
         }
-  });
+    });
 
+    // 채팅 메세지 전송
     socket.on('chat message', async ({ roomId, userId, message }) => {
         try {
             const chat = await prisma.chat.create({
@@ -101,9 +100,10 @@ io.on('connection', (socket) => {
         } catch (error) {
             console.error(`메세지 보내기 실패: ${error.message}`);
             socket.emit('error', '메세지 보내기 실패');
-    }
-  });
+        }
+    });
 
+    // 소켓 연결 해제
     socket.on('disconnect', () => {
         console.log('User disconnected');
     });
