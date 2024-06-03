@@ -1,6 +1,5 @@
 const express = require('express');
 const http = require('http');
-const session = require('express-session');
 const socketIo = require('socket.io');
 const cors = require('cors')
 const bodyParser = require('body-parser');
@@ -15,14 +14,6 @@ const PORT = 3000;
 
 app.use(express.static('public'));
 
-app.use(session({
-    secret: 'secret',
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-    maxAge: 1000 * 60 * 60
-    }
-}));
 
 app.use(cors({
     origin: '*',
@@ -95,6 +86,8 @@ io.on('connection', (socket) => {
                 chat: message,
             },
         });
+
+        // 특정 방 (roomId) 에 메세지 전송
         io.to(roomId).emit('chat message', chat);
         console.log(chat);
         } catch (error) {
