@@ -1,17 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-<<<<<<< HEAD
-  <title>실시간 채팅</title>
-</head>
-<body>
-  <h1>실시간 채팅</h1>
-  <ul id="chat-messages"></ul>
-  <form id="chat-form">
-    <input type="text" id="message-input" autocomplete="off" />
-    <button type="submit">전송</button>
-  </form>
-=======
   <title>소켓테스트</title>
   <style>
     ul { list-style-type: none; margin: 0; padding: 0; }
@@ -31,35 +20,11 @@
       <input id="input" autocomplete="off" /><button>Send</button>
     </form>
   </div>
->>>>>>> e4e709ab0c12552650b89b0d4ef9561425af3de8
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
 
-<<<<<<< HEAD
-    const chatMessages = document.getElementById('chat-messages');
-    const chatForm = document.getElementById('chat-form');
-    const messageInput = document.getElementById('message-input');
-
-    chatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const message = messageInput.value;
-      if (message.trim() !== '') {
-        socket.emit('chat message', message);
-        messageInput.value = '';
-      }
-    });
-
-    socket.on('chat message', (message) => {
-      const li = document.createElement('li');
-      li.textContent = message;
-      chatMessages.appendChild(li);
-    });
-  </script>
-</body>
-</html>
-=======
     async function fetchRooms() {
       try {
         const response = await fetch('/rooms');
@@ -118,4 +83,3 @@
   </script>
 </body>
 </html>
->>>>>>> e4e709ab0c12552650b89b0d4ef9561425af3de8
