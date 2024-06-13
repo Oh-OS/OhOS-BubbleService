@@ -7,7 +7,11 @@ const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+    cors: {
+        origin: '*',
+    }
+});
 const prisma = new PrismaClient();
 
 const PORT = 3000;
