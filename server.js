@@ -18,18 +18,6 @@ const PORT = 3000;
 
 app.use(express.static('public'));
 
-const sessionMiddleware = session({
-    secret: 'secret',
-    resave: false,
-    saveUninitialized: true,
-    cookie: { maxAge : 1000 * 60 * 60 }
-});
-
-app.use(sessionMiddleware);
-
-io.use((socket, next) => {
-    sessionMiddleware(socket.request, socket.request.res || {}, next);
-});
 
 app.use(cors({
     origin: '*',
