@@ -54,6 +54,37 @@ app.get('/getUserInfo/:id', async (req, res) => {
     }
 })
 
+// 각 방의 최근 메세지 가져오기
+app.get('/recent-messages', async (req, res) => {
+    try {
+        const recentMessages = await prisma.room.findMany({
+            select: {
+                id: true,
+                title: true,
+                chats: {
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                    take: 1,
+                    select: {
+                        chat: true,
+                        createdAt: true,
+                        user: {
+                            select: {
+                                nickname: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        res.json(recentMessages);
+    } catch (error) {
+        console.error(`최근 메세지 가져오기 실패: ${error.message}`);
+        res.status(500).json({ error: '최근 메세지 가져오기 실패' });
+    }
+});
+
 // 채팅관련
 io.on('connection', (socket) => {
     console.log('유저 연결됨');
