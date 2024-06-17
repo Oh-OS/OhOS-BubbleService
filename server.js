@@ -15,14 +15,18 @@ const PORT = 3000;
 
 app.use(express.static('public'));
 
-app.use(session({
+const sessionMiddleware = session({
     secret: 'secret',
     resave: false,
     saveUninitialized: true,
-    cookie: {
-    maxAge: 1000 * 60 * 60
-    }
-}));
+    cookie: { maxAge : 1000 * 60 * 60 }
+});
+
+app.use(sessionMiddleware);
+
+io.use((socket, next) => {
+    sessionMiddleware(socket.request, socket.request.res || {}, next);
+});
 
 app.use(cors({
     origin: '*',
@@ -59,9 +63,35 @@ app.get('/getUserInfo/:id', async (req, res) => {
     }
 })
 
+// 로그인
+app.post('/login', async (req,res) => {
+    try {
+        const {email, password} = req.body;
+
+        const user = await prisma.user.findUnique({ where: {email} });
+
+        if(user){
+            if(password === user.password){
+                req.session.user = user;
+
+                console.log(req.session.user);
+                return res.status(200).json(user);
+            }else{
+                return res.status(401).json({ error : 'Unauthorized'})
+            }
+        }else {
+            return res.status(404).json({ error : 'User Not Found'})
+        }
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ error : 'login error '})
+    }
+})
+
 // 채팅관련
 io.on('connection', (socket) => {
     console.log('유저 연결됨');
+    //console.log(req.session);
 
     // 채팅방에 참가 
     socket.on('join room', async (roomId) => {
@@ -86,12 +116,19 @@ io.on('connection', (socket) => {
     });
 
     // 채팅 메세지 전송
-    socket.on('chat message', async ({ roomId, userId, message }) => {
+    socket.on('chat message', async ({ roomId, message }) => {
         try {
+
+            const user = socket.request.session.user;
+            if (!user) {
+                socket.emit('error', 'User not authenticated');
+                return;
+            }
+            console.log(user);
             const chat = await prisma.chat.create({
                 data: {
                 roomKey: roomId,
-                userKey: userId,
+                userKey: user.id,
                 chat: message,
             },
         });
