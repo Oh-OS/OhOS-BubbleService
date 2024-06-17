@@ -1,6 +1,5 @@
 const express = require('express');
 const http = require('http');
-const session = require('express-session');
 const socketIo = require('socket.io');
 const cors = require('cors')
 const bodyParser = require('body-parser');
@@ -8,7 +7,11 @@ const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+    cors: {
+        origin: '*',
+    }
+});
 const prisma = new PrismaClient();
 
 const PORT = 3000;
@@ -87,6 +90,36 @@ app.post('/login', async (req,res) => {
         return res.status(500).json({ error : 'login error '})
     }
 })
+// 각 방의 최근 메세지 가져오기
+app.get('/recent-messages', async (req, res) => {
+    try {
+        const recentMessages = await prisma.room.findMany({
+            select: {
+                id: true,
+                title: true,
+                chats: {
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                    take: 1,
+                    select: {
+                        chat: true,
+                        createdAt: true,
+                        user: {
+                            select: {
+                                nickname: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        res.json(recentMessages);
+    } catch (error) {
+        console.error(`최근 메세지 가져오기 실패: ${error.message}`);
+        res.status(500).json({ error: '최근 메세지 가져오기 실패' });
+    }
+});
 
 // 채팅관련
 io.on('connection', (socket) => {
@@ -132,6 +165,8 @@ io.on('connection', (socket) => {
                 chat: message,
             },
         });
+
+        // 특정 방 (roomId) 에 메세지 전송
         io.to(roomId).emit('chat message', chat);
         console.log(chat);
         } catch (error) {
